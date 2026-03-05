@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="Vibes"/>
+<title>Vibes</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    background: #f5f5f7;
+    font-family: 'DM Sans', -apple-system, sans-serif;
+    min-height: 100vh; min-height: 100dvh;
+    display: flex; flex-direction: column;
+  }
+
+  /* ── Header ── */
+  .top {
+    background: #fff;
+    padding: 52px 22px 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid #ebebeb;
+    position: sticky; top: 0; z-index: 20;
+  }
+  .nav-btn {
+    width: 36px; height: 36px; border-radius: 50%;
+    border: none; background: #f2f2f5; color: #1c1c1e;
+    font-size: 20px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+  }
+  .nav-btn:active { background: #ddd; }
+  .month-title { font-size: 20px; font-weight: 600; color: #1c1c1e; letter-spacing: -0.3px; }
+
+
+
+  /* ── Calendar ── */
+  .cal-wrap {
+    background: #fff; margin: 14px 14px 0;
+    border-radius: 20px; overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .weekdays {
+    display: grid; grid-template-columns: repeat(7,1fr);
+    padding: 12px 8px 6px;
+  }
+  .wd {
+    text-align: center; font-size: 11px; font-weight: 600;
+    color: #aaa; letter-spacing: 0.5px; text-transform: uppercase;
+  }
+  .grid {
+    display: grid; grid-template-columns: repeat(7,1fr);
+    gap: 5px; padding: 4px 8px 14px;
+  }
+  .cell {
+    aspect-ratio: 1; border-radius: 12px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    cursor: pointer; transition: transform 0.12s;
+    min-height: 38px; position: relative;
+  }
+  .cell:active { transform: scale(0.85); }
+  .cell.empty { pointer-events: none; background: transparent !important; }
+
+  .ph-ovulation   { background: #16a34a; }
+  .ph-follicular2 { background: #4ade80; }
+  .ph-follicular1 { background: #bbf7d0; }
+  .ph-luteal      { background: #fde047; }
+  .ph-pms1        { background: #fca5a5; }
+  .ph-pms2        { background: #f87171; }
+  .ph-period      { background: #ef4444; }
+  .ph-none        { background: #f0f0f3; }
+
+  .cell-num { font-size: 15px; font-weight: 500; line-height: 1; }
+  .ph-ovulation .cell-num, .ph-pms2 .cell-num, .ph-period .cell-num { color: #fff; }
+  .ph-follicular1 .cell-num, .ph-luteal .cell-num, .ph-pms1 .cell-num { color: #333; }
+  .ph-follicular2 .cell-num { color: #166534; }
+  .ph-none .cell-num { color: #999; }
+
+  .is-today { box-shadow: inset 0 0 0 2.5px rgba(0,0,0,0.3); }
+  .ph-none.is-today { box-shadow: inset 0 0 0 2.5px #007aff; }
+  .is-today .cell-num { font-weight: 700; }
+  .selected { box-shadow: 0 0 0 3px rgba(0,0,0,0.2), 0 6px 20px rgba(0,0,0,0.18); transform: scale(1.1); z-index: 2; }
+
+  /* ── Detail card ── */
+  .detail {
+    margin: 10px 14px 0; border-radius: 14px; overflow: hidden;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+  }
+  .detail-inner { padding: 12px 16px; display: flex; align-items: center; gap: 12px; }
+  .detail-icon {
+    font-size: 20px; width: 38px; height: 38px; border-radius: 10px;
+    background: rgba(255,255,255,0.32);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .detail-phase { font-size: 13px; font-weight: 600; }
+  .detail-date  { font-size: 11px; margin-top: 1px; opacity: 0.65; }
+  .detail-tip   { font-size: 12px; margin-top: 3px; opacity: 0.8; line-height: 1.45; }
+
+  /* ── Shared collapsible card ── */
+  .card-wrap {
+    margin: 14px 14px 0;
+    border-radius: 20px; overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .card-toggle {
+    background: #fff; border: none; width: 100%;
+    padding: 14px 18px;
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer; font-family: inherit;
+    transition: background 0.15s;
+  }
+  .card-toggle:active { background: #f5f5f7; }
+  .card-toggle-left { display: flex; align-items: center; gap: 10px; }
+  .card-toggle-label { font-size: 13px; font-weight: 600; color: #1c1c1e; }
+  .card-badge {
+    font-size: 11px; font-weight: 600; color: #fff;
+    background: #007aff; border-radius: 10px;
+    padding: 2px 8px;
+  }
+  .card-badge.red { background: #ef4444; }
+  .card-badge.green { background: #16a34a; }
+  .card-arrow {
+    font-size: 12px; color: #aaa;
+    transition: transform 0.25s ease; display: inline-block;
+  }
+  .card-arrow.open { transform: rotate(180deg); }
+  .card-body {
+    background: #fff; border-top: 1px solid #ebebeb;
+    max-height: 0; overflow: hidden;
+    transition: max-height 0.35s ease, opacity 0.25s ease;
+    opacity: 0;
+  }
+  .card-body.open { max-height: 600px; opacity: 1; }
+  .card-body-inner { padding: 14px 16px; }
+
+  /* ── Log panel ── */
+  .log-stats {
+    display: flex; gap: 10px; margin-bottom: 14px;
+  }
+  .stat-box {
+    flex: 1; background: #f5f5f7; border-radius: 12px;
+    padding: 10px 12px; text-align: center;
+  }
+  .stat-val { font-size: 20px; font-weight: 700; color: #1c1c1e; }
+  .stat-lbl { font-size: 10px; color: #888; margin-top: 2px; letter-spacing: 0.5px; text-transform: uppercase; }
+
+  .log-btn-row { display: flex; gap: 8px; margin-bottom: 14px; }
+  .log-btn {
+    flex: 1; padding: 11px; border-radius: 12px; border: none;
+    font-family: inherit; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: opacity 0.15s;
+  }
+  .log-btn:active { opacity: 0.75; }
+  .log-btn-primary { background: #1c1c1e; color: #fff; }
+  .log-btn-secondary { background: #f0f0f3; color: #555; }
+
+  /* custom date picker row */
+  .date-pick-row {
+    display: none; gap: 8px; margin-bottom: 14px; align-items: center;
+  }
+  .date-pick-row.show { display: flex; }
+  .date-input {
+    flex: 1; padding: 10px 12px; border-radius: 12px;
+    border: 1.5px solid #e0e0e0; font-family: inherit;
+    font-size: 13px; color: #1c1c1e; background: #f9f9f9;
+    outline: none;
+  }
+  .date-input:focus { border-color: #007aff; }
+  .date-confirm {
+    padding: 10px 16px; border-radius: 12px; border: none;
+    background: #007aff; color: #fff;
+    font-family: inherit; font-size: 13px; font-weight: 600;
+    cursor: pointer;
+  }
+
+  .log-section-label {
+    font-size: 10px; font-weight: 600; color: #aaa;
+    letter-spacing: 1px; text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .log-list { display: flex; flex-direction: column; gap: 6px; }
+  .log-entry {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #f5f5f7; border-radius: 10px; padding: 9px 12px;
+  }
+  .log-entry-left { display: flex; align-items: center; gap: 8px; }
+  .log-entry-dot { width: 8px; height: 8px; border-radius: 50%; background: #ef4444; }
+  .log-entry-date { font-size: 13px; font-weight: 500; color: #1c1c1e; }
+  .log-entry-len { font-size: 11px; color: #888; }
+  .log-delete {
+    width: 24px; height: 24px; border-radius: 50%;
+    border: none; background: #e0e0e0; color: #888;
+    font-size: 14px; cursor: pointer; display: flex;
+    align-items: center; justify-content: center;
+    transition: background 0.15s;
+  }
+  .log-delete:active { background: #f87171; color: #fff; }
+  .log-empty { font-size: 13px; color: #aaa; text-align: center; padding: 10px 0; }
+
+  /* ── Legend ── */
+  .legend-swatches-preview { display: flex; gap: 4px; }
+  .preview-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .legend-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  }
+  .leg-item { display: flex; align-items: center; gap: 10px; }
+  .leg-swatch { width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0; }
+  .leg-name { font-size: 12px; font-weight: 500; color: #555; }
+
+  .spacer { height: 36px; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="top">
+  <button class="nav-btn" onclick="shift(-1)">‹</button>
+  <div class="month-title" id="monthTitle"></div>
+  <button class="nav-btn" onclick="shift(1)">›</button>
+</div>
+
+
+
+<!-- Calendar -->
+<div class="cal-wrap">
+  <div class="weekdays">
+    <div class="wd">S</div><div class="wd">M</div><div class="wd">T</div>
+    <div class="wd">W</div><div class="wd">T</div><div class="wd">F</div>
+    <div class="wd">S</div>
+  </div>
+  <div class="grid" id="grid"></div>
+</div>
+
+<!-- Detail card -->
+<div class="detail" id="detail" style="display:none"></div>
+
+<!-- Calibration panel -->
+<div class="card-wrap">
+  <button class="card-toggle" onclick="toggleCard('log')">
+    <div class="card-toggle-left">
+      <span style="font-size:16px">⚙️</span>
+      <div class="card-toggle-label">Calibration</div>
+      <span class="card-badge" id="logBadge" style="background:#aaa">0</span>
+    </div>
+    <span class="card-arrow" id="logArrow">▼</span>
+  </button>
+  <div class="card-body" id="logBody">
+    <div class="card-body-inner">
+
+      <!-- Stats -->
+      <div class="log-stats">
+        <div class="stat-box">
+          <div class="stat-val" id="statCycleLen">28</div>
+          <div class="stat-lbl">Avg cycle days</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="statNextPeriod">—</div>
+          <div class="stat-lbl">Next period</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="statNextGreen">—</div>
+          <div class="stat-lbl">Next 🔥</div>
+        </div>
+      </div>
+
+      <!-- Buttons -->
+      <div class="log-btn-row">
+        <button class="log-btn log-btn-primary" onclick="logToday()">Mark today</button>
+        <button class="log-btn log-btn-secondary" onclick="toggleDatePicker()">Pick date</button>
+      </div>
+      <div class="date-pick-row" id="datePickRow">
+        <input type="date" class="date-input" id="dateInput"/>
+        <button class="date-confirm" onclick="logPickedDate()">Add</button>
+      </div>
+
+      <!-- History -->
+      <div class="log-section-label">History</div>
+      <div class="log-list" id="logList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Color guide panel -->
+<div class="card-wrap">
+  <button class="card-toggle" onclick="toggleCard('legend')">
+    <div class="card-toggle-left">
+      <div class="legend-swatches-preview">
+        <div class="preview-dot" style="background:#16a34a"></div>
+        <div class="preview-dot" style="background:#fde047"></div>
+        <div class="preview-dot" style="background:#f87171"></div>
+        <div class="preview-dot" style="background:#ef4444"></div>
+      </div>
+      <div class="card-toggle-label">Color Guide</div>
+    </div>
+    <span class="card-arrow" id="legendArrow">▼</span>
+  </button>
+  <div class="card-body" id="legendBody">
+    <div class="card-body-inner">
+      <div class="legend-grid">
+        <div class="leg-item"><div class="leg-swatch" style="background:#16a34a"></div><div class="leg-name">🔥 Green Zone</div></div>
+        <div class="leg-item"><div class="leg-swatch" style="background:#4ade80"></div><div class="leg-name">🟢 Rising</div></div>
+        <div class="leg-item"><div class="leg-swatch" style="background:#bbf7d0"></div><div class="leg-name">🌱 Lifting</div></div>
+        <div class="leg-item"><div class="leg-swatch" style="background:#fde047"></div><div class="leg-name">🟡 Luteal</div></div>
+        <div class="leg-item"><div class="leg-swatch" style="background:#fca5a5"></div><div class="leg-name">🔸 PMS</div></div>
+        <div class="leg-item"><div class="leg-swatch" style="background:#f87171"></div><div class="leg-name">🔴 PMS Peak</div></div>
+        <div class="leg-item"><div class="leg-swatch" style="background:#ef4444"></div><div class="leg-name">❤️ Period</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="spacer"></div>
+
+<script>
+// ── Phase config ─────────────────────────────────────────────────
+const PH = {
+  ovulation:   { cls:'ph-ovulation',   icon:'🔥', label:'Green Zone',  tip:'Best window. Be present and attentive.',     bg:'linear-gradient(135deg,#16a34a,#15803d)', tc:'#fff' },
+  follicular2: { cls:'ph-follicular2', icon:'🟢', label:'Rising',       tip:'Good energy. Plan something together.',       bg:'linear-gradient(135deg,#22c55e,#16a34a)', tc:'#fff' },
+  follicular1: { cls:'ph-follicular1', icon:'🌱', label:'Lifting',      tip:'Warming back up. Easy does it.',              bg:'linear-gradient(135deg,#86efac,#4ade80)', tc:'#166534' },
+  luteal:      { cls:'ph-luteal',      icon:'🟡', label:'Luteal',       tip:'Give space. Don\'t be needy.',               bg:'linear-gradient(135deg,#fef08a,#fde047)', tc:'#713f12' },
+  pms1:        { cls:'ph-pms1',        icon:'🔸', label:'PMS',          tip:'Tread carefully.',                            bg:'linear-gradient(135deg,#fca5a5,#f87171)', tc:'#7f1d1d' },
+  pms2:        { cls:'ph-pms2',        icon:'🔴', label:'PMS Peak',     tip:'Maximum space and quietness.',               bg:'linear-gradient(135deg,#f87171,#ef4444)', tc:'#fff' },
+  period:      { cls:'ph-period',      icon:'❤️', label:'Period',       tip:'Warmth and comfort. No pressure on anything.', bg:'linear-gradient(135deg,#ef4444,#dc2626)', tc:'#fff' },
+};
+
+// ── Storage ──────────────────────────────────────────────────────
+// Seed: Feb 28 2025 = last days of ovulation
+// Luteal = 14 days after ovulation → period starts ~Mar 14-15
+const SEED = ['2025-03-15'];
+
+function loadLogs() {
+  try {
+    const raw = localStorage.getItem('cyclemap_logs');
+    return raw ? JSON.parse(raw) : [...SEED];
+  } catch(e) { return [...SEED]; }
+}
+function saveLogs(logs) {
+  localStorage.setItem('cyclemap_logs', JSON.stringify(logs));
+}
+
+let logs = loadLogs(); // sorted array of 'YYYY-MM-DD' period start dates
+
+// ── Cycle engine ─────────────────────────────────────────────────
+// Returns average cycle length from last 3 logged gaps (default 28)
+function avgCycleLen() {
+  if (logs.length < 2) return 28;
+  const sorted = [...logs].sort();
+  const gaps = [];
+  for (let i = 1; i < sorted.length; i++) {
+    const a = new Date(sorted[i-1]+'T12:00:00');
+    const b = new Date(sorted[i]+'T12:00:00');
+    gaps.push(Math.round((b - a) / 86400000));
+  }
+  // use last 3 gaps only
+  const recent = gaps.slice(-3).filter(g => g >= 20 && g <= 45);
+  if (!recent.length) return 28;
+  return Math.round(recent.reduce((a,b)=>a+b,0) / recent.length);
+}
+
+// Build the phase map dynamically from period logs
+function buildCycleMap() {
+  const C = {};
+  const cycleLen = avgCycleLen();
+  const sorted = [...logs].sort();
+
+  // Project forward enough cycles to cover today + 6 months ahead
+  const lastLog = sorted[sorted.length - 1];
+  const allStarts = [...sorted];
+
+  const horizon = new Date();
+  horizon.setMonth(horizon.getMonth() + 6);
+  let proj = new Date(lastLog + 'T12:00:00');
+  // keep projecting until we're past the horizon (no iteration cap)
+  while (proj <= horizon) {
+    proj = new Date(proj.getTime() + cycleLen * 86400000);
+    const pk = proj.toISOString().slice(0,10);
+    if (!allStarts.includes(pk)) allStarts.push(pk);
+  }
+
+  // For each start, paint phases
+  for (let si = 0; si < allStarts.length; si++) {
+    const start = new Date(allStarts[si] + 'T12:00:00');
+    // Determine this cycle's actual length (use next logged date if available, else avgCycleLen)
+    let thisLen = cycleLen;
+    if (si + 1 < allStarts.length) {
+      const next = new Date(allStarts[si+1] + 'T12:00:00');
+      const actual = Math.round((next - start) / 86400000);
+      if (actual >= 20 && actual <= 45) thisLen = actual;
+    }
+
+    const ovDay    = thisLen - 14; // ovulation center day (from period start, 1-indexed)
+    const phases = [
+      // [startDay, endDay, phase]  — 1-indexed from period start
+      [1,  5,           'period'],
+      [6,  9,           'follicular1'],
+      [10, ovDay - 2,   'follicular2'],
+      [ovDay - 1, ovDay + 2, 'ovulation'],
+      [ovDay + 3, thisLen - 5, 'luteal'],
+      [thisLen - 4, thisLen - 2, 'pms1'],
+      [thisLen - 1, thisLen,    'pms2'],
+    ];
+
+    for (const [d1, d2, ph] of phases) {
+      if (d1 > d2) continue;
+      for (let d = d1; d <= d2; d++) {
+        const dt = new Date(start.getTime() + (d - 1) * 86400000);
+        const k  = dt.toISOString().slice(0, 10);
+        C[k] = ph;
+      }
+    }
+  }
+  return C;
+}
+
+// ── State ────────────────────────────────────────────────────────
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const today  = new Date();
+let yr = today.getFullYear(), mo = today.getMonth();
+let selKey = null;
+let C = buildCycleMap();
+
+function dkey(y,m,d){ return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
+function todayKey(){ return dkey(today.getFullYear(), today.getMonth(), today.getDate()); }
+
+// ── Render calendar ──────────────────────────────────────────────
+
+
+function render() {
+  document.getElementById('monthTitle').textContent=`${MONTHS[mo]} ${yr}`;
+  const grid=document.getElementById('grid');
+  grid.innerHTML='';
+  const firstDow=new Date(yr,mo,1).getDay();
+  const dim=new Date(yr,mo+1,0).getDate();
+  const tk=todayKey();
+  for(let i=0;i<firstDow;i++){const e=document.createElement('div');e.className='cell empty';grid.appendChild(e);}
+  for(let d=1;d<=dim;d++){
+    const k=dkey(yr,mo,d), ph=C[k], p=ph?PH[ph]:null;
+    const cell=document.createElement('div');
+    cell.className='cell '+(p?p.cls:'ph-none');
+    if(k===tk)     cell.classList.add('is-today');
+    if(k===selKey) cell.classList.add('selected');
+    const num=document.createElement('div');
+    num.className='cell-num'; num.textContent=d;
+    cell.appendChild(num);
+    cell.addEventListener('click',()=>{
+      selKey=(selKey===k)?null:k;
+      showDetail(k,ph,p);
+      render();
+    });
+    grid.appendChild(cell);
+  }
+}
+
+function showDetail(k,ph,p){
+  const card=document.getElementById('detail');
+  if(!ph||!p||selKey!==k){card.style.display='none';return;}
+  const dt=new Date(k+'T12:00:00');
+  const ds=dt.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  card.style.display='block';
+  card.style.background=p.bg;
+  card.innerHTML=`<div class="detail-inner">
+    <div class="detail-icon">${p.icon}</div>
+    <div>
+      <div class="detail-phase" style="color:${p.tc}">${p.label}</div>
+      <div class="detail-date"  style="color:${p.tc}">${ds}</div>
+      <div class="detail-tip"   style="color:${p.tc}">${p.tip}</div>
+    </div>
+  </div>`;
+  card.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function shift(dir){
+  mo+=dir;
+  if(mo>11){mo=0;yr++;} if(mo<0){mo=11;yr--;}
+  selKey=null;
+  document.getElementById('detail').style.display='none';
+  render();
+}
+
+// ── Log panel ────────────────────────────────────────────────────
+function refreshAll() {
+  C = buildCycleMap();
+  render();
+  renderLogPanel();
+}
+
+function renderLogPanel() {
+  const sorted = [...logs].sort().reverse(); // newest first
+  const cycleLen = avgCycleLen();
+
+  // badge
+  document.getElementById('logBadge').textContent = logs.length;
+
+  // stats
+  document.getElementById('statCycleLen').textContent = cycleLen;
+
+  // find next period
+  const tk = todayKey();
+  const futureStarts = Object.entries(C)
+    .filter(([k,v]) => v === 'period' && k >= tk)
+    .sort();
+  const nextPeriodStart = futureStarts.length ? futureStarts[0][0] : null;
+  if (nextPeriodStart) {
+    const d = new Date(nextPeriodStart+'T12:00:00');
+    document.getElementById('statNextPeriod').textContent =
+      d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  } else {
+    document.getElementById('statNextPeriod').textContent = '—';
+  }
+
+  // find next green zone
+  const futureGreen = Object.entries(C)
+    .filter(([k,v]) => v === 'ovulation' && k >= tk)
+    .sort();
+  if (futureGreen.length) {
+    const d = new Date(futureGreen[0][0]+'T12:00:00');
+    document.getElementById('statNextGreen').textContent =
+      d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  } else {
+    document.getElementById('statNextGreen').textContent = '—';
+  }
+
+  // history list
+  const list = document.getElementById('logList');
+  if (!sorted.length) {
+    list.innerHTML='<div class="log-empty">No logs yet</div>'; return;
+  }
+  list.innerHTML = '';
+  const allSorted = [...logs].sort();
+  sorted.forEach((k, i) => {
+    const d = new Date(k+'T12:00:00');
+    const ds = d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+    // calculate gap to previous
+    const idx = allSorted.indexOf(k);
+    let lenStr = '';
+    if (idx > 0) {
+      const prev = new Date(allSorted[idx-1]+'T12:00:00');
+      const gap  = Math.round((d - prev) / 86400000);
+      lenStr = `${gap}d cycle`;
+    }
+    const row = document.createElement('div');
+    row.className = 'log-entry';
+    row.innerHTML = `
+      <div class="log-entry-left">
+        <div class="log-entry-dot"></div>
+        <div>
+          <div class="log-entry-date">${ds}</div>
+          ${lenStr ? `<div class="log-entry-len">${lenStr}</div>` : ''}
+        </div>
+      </div>
+      <button class="log-delete" onclick="deleteLog('${k}')">×</button>
+    `;
+    list.appendChild(row);
+  });
+}
+
+function logToday() {
+  const k = todayKey();
+  if (!logs.includes(k)) { logs.push(k); saveLogs(logs); }
+  refreshAll();
+}
+
+function toggleDatePicker() {
+  const row = document.getElementById('datePickRow');
+  row.classList.toggle('show');
+  if (row.classList.contains('show')) {
+    // default to today
+    document.getElementById('dateInput').value = todayKey();
+  }
+}
+
+function logPickedDate() {
+  const val = document.getElementById('dateInput').value;
+  if (!val) return;
+  if (!logs.includes(val)) { logs.push(val); saveLogs(logs); }
+  document.getElementById('datePickRow').classList.remove('show');
+  refreshAll();
+}
+
+function deleteLog(k) {
+  // don't delete the seed if it's the only entry
+  if (logs.length <= 1) { alert('Keep at least one entry so the calendar works.'); return; }
+  logs = logs.filter(l => l !== k);
+  saveLogs(logs);
+  refreshAll();
+}
+
+// ── Collapsible panels ───────────────────────────────────────────
+function toggleCard(id) {
+  const body  = document.getElementById(id+'Body');
+  const arrow = document.getElementById(id+'Arrow');
+  body.classList.toggle('open');
+  arrow.classList.toggle('open');
+}
+
+// ── Init ─────────────────────────────────────────────────────────
+refreshAll();
+</script>
+</body>
+</html>
