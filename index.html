@@ -211,6 +211,16 @@
   .leg-swatch { width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0; }
   .leg-name { font-size: 12px; font-weight: 500; color: #555; }
 
+  /* ── Game night dot ── */
+  .game-dot {
+    position: absolute;
+    bottom: 4px; right: 4px;
+    font-size: 9px;
+    line-height: 1;
+    display: none;
+  }
+  .eye-on .game-dot { display: block; }
+
   .spacer { height: 36px; }
 </style>
 </head>
@@ -220,12 +230,15 @@
 <div class="top">
   <button class="nav-btn" onclick="shift(-1)">‹</button>
   <div class="month-title" id="monthTitle"></div>
-  <button class="nav-btn" onclick="shift(1)">›</button>
+  <button class="nav-btn" id="eyeBtn" onclick="toggleEye()" title="Show/hide game nights">👁</button>
 </div>
 
-
-
-<!-- Calendar -->
+<!-- Month nav -->
+<div style="background:#fff; display:flex; align-items:center; justify-content:space-between; padding:0 22px 14px; border-bottom:1px solid #ebebeb;">
+  <button class="nav-btn" onclick="shift(-1)">‹</button>
+  <div style="font-size:13px; color:#8e8e93; font-weight:500;" id="monthSub"></div>
+  <button class="nav-btn" onclick="shift(1)">›</button>
+</div>
 <div class="cal-wrap">
   <div class="weekdays">
     <div class="wd">S</div><div class="wd">M</div><div class="wd">T</div>
@@ -313,7 +326,48 @@
   </div>
 </div>
 
-<div class="spacer"></div>
+<!-- Game Night panel -->
+<div class="card-wrap">
+  <button class="card-toggle" onclick="toggleCard('game')">
+    <div class="card-toggle-left">
+      <span style="font-size:16px">🎮</span>
+      <div class="card-toggle-label">Game Nights</div>
+      <span class="card-badge" id="gameBadge" style="background:#aaa">0</span>
+    </div>
+    <span class="card-arrow" id="gameArrow">▼</span>
+  </button>
+  <div class="card-body" id="gameBody">
+    <div class="card-body-inner">
+      <!-- Stats -->
+      <div class="log-stats">
+        <div class="stat-box">
+          <div class="stat-val" id="statGameTotal">0</div>
+          <div class="stat-lbl">This month</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="statGameGreen">0</div>
+          <div class="stat-lbl">On green days</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="statGameRate">—</div>
+          <div class="stat-lbl">Green hit rate</div>
+        </div>
+      </div>
+      <!-- Buttons -->
+      <div class="log-btn-row">
+        <button class="log-btn log-btn-primary" onclick="logGameToday()">Log tonight</button>
+        <button class="log-btn log-btn-secondary" onclick="toggleGamePicker()">Pick date</button>
+      </div>
+      <div class="date-pick-row" id="gamePickRow">
+        <input type="date" class="date-input" id="gameInput"/>
+        <button class="date-confirm" onclick="logGamePicked()">Add</button>
+      </div>
+      <!-- History -->
+      <div class="log-section-label">History</div>
+      <div class="log-list" id="gameList"></div>
+    </div>
+  </div>
+</div>
 
 <script>
 // ── Phase config ─────────────────────────────────────────────────
@@ -416,7 +470,28 @@ function buildCycleMap() {
   return C;
 }
 
-// ── State ────────────────────────────────────────────────────────
+// ── Game nights ──────────────────────────────────────────────────
+const GAME_SEED = ['2026-03-20'];
+
+function loadGames() {
+  try {
+    const raw = localStorage.getItem('cyclemap_games');
+    return raw ? JSON.parse(raw) : [...GAME_SEED];
+  } catch(e) { return [...GAME_SEED]; }
+}
+function saveGames(g) { localStorage.setItem('cyclemap_games', JSON.stringify(g)); }
+
+let games    = loadGames();
+let eyeOn    = false; // hidden by default
+
+function toggleEye() {
+  eyeOn = !eyeOn;
+  const btn = document.getElementById('eyeBtn');
+  btn.style.background = eyeOn ? '#1c1c1e' : '#f2f2f5';
+  btn.style.color      = eyeOn ? '#fff'     : '#1c1c1e';
+  const grid = document.getElementById('grid');
+  eyeOn ? grid.classList.add('eye-on') : grid.classList.remove('eye-on');
+}
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const today  = new Date();
 let yr = today.getFullYear(), mo = today.getMonth();
@@ -431,6 +506,7 @@ function todayKey(){ return dkey(today.getFullYear(), today.getMonth(), today.ge
 
 function render() {
   document.getElementById('monthTitle').textContent=`${MONTHS[mo]} ${yr}`;
+  document.getElementById('monthSub').textContent=`${MONTHS[mo]} ${yr}`;
   const grid=document.getElementById('grid');
   grid.innerHTML='';
   const firstDow=new Date(yr,mo,1).getDay();
@@ -451,6 +527,13 @@ function render() {
       showDetail(k,ph,p);
       render();
     });
+    // game night dot
+    if (games.includes(k)) {
+      const dot = document.createElement('div');
+      dot.className = 'game-dot';
+      dot.textContent = '🎮';
+      cell.appendChild(dot);
+    }
     grid.appendChild(cell);
   }
 }
@@ -486,6 +569,73 @@ function refreshAll() {
   C = buildCycleMap();
   render();
   renderLogPanel();
+  renderGamePanel();
+}
+
+function renderGamePanel() {
+  const badge = document.getElementById('gameBadge');
+  badge.textContent = games.length;
+
+  // this month stats
+  const prefix = `${yr}-${String(mo+1).padStart(2,'0')}`;
+  const thisMonth = games.filter(k => k.startsWith(prefix));
+  const greenHits = thisMonth.filter(k => C[k] === 'ovulation' || C[k] === 'follicular2');
+  document.getElementById('statGameTotal').textContent  = thisMonth.length;
+  document.getElementById('statGameGreen').textContent  = greenHits.length;
+  document.getElementById('statGameRate').textContent   =
+    thisMonth.length ? Math.round(greenHits.length / thisMonth.length * 100) + '%' : '—';
+
+  // history list
+  const list = document.getElementById('gameList');
+  if (!games.length) { list.innerHTML='<div class="log-empty">No logs yet</div>'; return; }
+  list.innerHTML = '';
+  [...games].sort().reverse().forEach(k => {
+    const d  = new Date(k+'T12:00:00');
+    const ds = d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+    const ph = C[k];
+    const isGreen = ph === 'ovulation' || ph === 'follicular2';
+    const phLabel = ph ? PH[ph].label : '—';
+    const row = document.createElement('div');
+    row.className = 'log-entry';
+    row.innerHTML = `
+      <div class="log-entry-left">
+        <div style="font-size:14px">🎮</div>
+        <div>
+          <div class="log-entry-date">${ds}</div>
+          <div class="log-entry-len" style="color:${isGreen?'#16a34a':'#888'}">${phLabel}${isGreen?' ✓':''}</div>
+        </div>
+      </div>
+      <button class="log-delete" onclick="deleteGame('${k}')">×</button>
+    `;
+    list.appendChild(row);
+  });
+}
+
+function logGameToday() {
+  const k = todayKey();
+  if (!games.includes(k)) { games.push(k); saveGames(games); }
+  refreshAll();
+}
+
+function toggleGamePicker() {
+  const row = document.getElementById('gamePickRow');
+  row.classList.toggle('show');
+  if (row.classList.contains('show'))
+    document.getElementById('gameInput').value = todayKey();
+}
+
+function logGamePicked() {
+  const val = document.getElementById('gameInput').value;
+  if (!val) return;
+  if (!games.includes(val)) { games.push(val); saveGames(games); }
+  document.getElementById('gamePickRow').classList.remove('show');
+  refreshAll();
+}
+
+function deleteGame(k) {
+  games = games.filter(g => g !== k);
+  saveGames(games);
+  refreshAll();
 }
 
 function renderLogPanel() {
