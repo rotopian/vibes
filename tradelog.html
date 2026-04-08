@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TradeLog — Daily Context</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --border: #e0ddd6;
+    --border-strong: #c8c4bc;
+    --text: #1a1916;
+    --text-muted: #7a7870;
+    --text-faint: #b0ada6;
+    --accent: #e85a00;
+    --accent-light: #fff0e8;
+    --green: #1a7a3a;
+    --red: #b82020;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 13px;
+  }
+
+  /* HEADER */
+  header {
+    background: var(--text);
+    color: #f5f4f0;
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 48px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .logo {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    color: #f5f4f0;
+  }
+  .logo span { color: var(--accent); }
+  .header-date {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: #888580;
+    letter-spacing: 0.04em;
+  }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .btn-generate {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 7px 18px;
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: background 0.15s;
+  }
+  .btn-generate:hover { background: #c94d00; }
+  .btn-save {
+    background: transparent;
+    color: #c8c4bc;
+    border: 1px solid #444;
+    padding: 6px 14px;
+    font-family: var(--sans);
+    font-size: 12px;
+    cursor: pointer;
+    letter-spacing: 0.03em;
+    transition: all 0.15s;
+  }
+  .btn-save:hover { border-color: #888; color: #f5f4f0; }
+
+  /* LAYOUT */
+  .app {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 28px 24px 80px;
+  }
+
+  /* SECTION */
+  .section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    margin-bottom: 2px;
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 18px;
+    border-bottom: 1px solid var(--border);
+    background: #faf9f7;
+    cursor: pointer;
+    user-select: none;
+  }
+  .section-header:hover { background: #f5f4f0; }
+  .section-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .section-title .num {
+    color: var(--accent);
+    margin-right: 10px;
+  }
+  .collapse-icon {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    transition: transform 0.15s;
+  }
+  .section.collapsed .collapse-icon { transform: rotate(-90deg); }
+  .section-body {
+    padding: 18px;
+    overflow: hidden;
+  }
+  .section.collapsed .section-body { display: none; }
+
+  /* POSITIONS TABLE */
+  .positions-grid {
+    display: grid;
+    gap: 2px;
+  }
+  .position-row {
+    display: grid;
+    grid-template-columns: 80px 100px 1fr 90px 90px 90px 90px 36px;
+    gap: 0;
+    border: 1px solid var(--border);
+    background: #fafaf8;
+    align-items: stretch;
+  }
+  .position-row.header-row {
+    background: #f0efeb;
+    border-color: var(--border-strong);
+  }
+  .cell {
+    padding: 7px 10px;
+    border-right: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+  }
+  .cell:last-child { border-right: none; justify-content: center; }
+  .cell-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .cell input, .cell select, .cell textarea {
+    width: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+    resize: none;
+  }
+  .cell input::placeholder, .cell textarea::placeholder {
+    color: var(--text-faint);
+  }
+  .cell select { cursor: pointer; }
+  .cell-thesis input { font-family: var(--sans); font-size: 12px; }
+  .remove-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-faint);
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    transition: color 0.15s;
+  }
+  .remove-btn:hover { color: var(--red); }
+  .add-position-btn {
+    margin-top: 8px;
+    background: transparent;
+    border: 1px dashed var(--border-strong);
+    padding: 8px 14px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    width: 100%;
+    text-align: left;
+    transition: all 0.15s;
+  }
+  .add-position-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-light);
+  }
+  .pos-type-tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 9px;
+    padding: 2px 5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+  .tag-option { background: #e8f0ff; color: #1a4a9a; }
+  .tag-stock { background: #e8f5ee; color: var(--green); }
+
+  /* TEXT AREAS */
+  .field-group { margin-bottom: 14px; }
+  .field-group:last-child { margin-bottom: 0; }
+  .field-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    display: block;
+  }
+  .field-input {
+    width: 100%;
+    background: #fafaf8;
+    border: 1px solid var(--border);
+    padding: 10px 12px;
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--text);
+    outline: none;
+    resize: vertical;
+    min-height: 70px;
+    transition: border-color 0.15s;
+    line-height: 1.6;
+  }
+  .field-input:focus { border-color: var(--border-strong); }
+  .field-input::placeholder { color: var(--text-faint); }
+  .field-input.single-line {
+    min-height: unset;
+    height: 36px;
+    resize: none;
+  }
+
+  /* RULES LIST */
+  .rules-list { display: flex; flex-direction: column; gap: 6px; }
+  .rule-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .rule-item input {
+    flex: 1;
+    background: #fafaf8;
+    border: 1px solid var(--border);
+    padding: 8px 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .rule-item input:focus { border-color: var(--border-strong); }
+  .rule-item input::placeholder { color: var(--text-faint); }
+  .add-rule-btn {
+    background: transparent;
+    border: 1px dashed var(--border-strong);
+    padding: 7px 14px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    text-align: left;
+    transition: all 0.15s;
+    margin-top: 4px;
+  }
+  .add-rule-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+
+  /* WATCHLIST */
+  .watchlist-row {
+    display: grid;
+    grid-template-columns: 80px 1fr 120px 36px;
+    gap: 2px;
+    margin-bottom: 2px;
+  }
+  .watch-cell {
+    background: #fafaf8;
+    border: 1px solid var(--border);
+  }
+  .watch-cell input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    padding: 8px 10px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+  }
+  .watch-cell input::placeholder { color: var(--text-faint); }
+
+  /* OUTPUT MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(26, 25, 22, 0.7);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    width: 720px;
+    max-width: 95vw;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+  }
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    background: #faf9f7;
+  }
+  .modal-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .modal-actions { display: flex; gap: 8px; }
+  .btn-copy {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 6px 16px;
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    transition: background 0.15s;
+  }
+  .btn-copy:hover { background: #c94d00; }
+  .btn-close {
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    padding: 6px 14px;
+    font-family: var(--sans);
+    font-size: 11px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-close:hover { color: var(--text); border-color: var(--text); }
+  .modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+  }
+  #output-text {
+    width: 100%;
+    height: 100%;
+    min-height: 400px;
+    background: #fafaf8;
+    border: 1px solid var(--border);
+    padding: 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1.7;
+    resize: none;
+    outline: none;
+  }
+  .copy-confirm {
+    display: none;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--green);
+    letter-spacing: 0.04em;
+  }
+  .copy-confirm.show { display: inline; }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--text);
+    color: #f5f4f0;
+    padding: 10px 18px;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: all 0.2s;
+    pointer-events: none;
+    z-index: 300;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  /* STATUS BAR */
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 8px 18px;
+    border-bottom: 1px solid var(--border);
+    background: #faf9f7;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+  }
+  .status-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    margin-right: 6px;
+  }
+  .status-dot.unsaved { background: var(--accent); }
+
+  /* TABS for position type */
+  .type-tabs { display: flex; gap: 2px; margin-bottom: 12px; }
+  .type-tab {
+    padding: 5px 14px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    transition: all 0.15s;
+  }
+  .type-tab.active {
+    background: var(--text);
+    color: #f5f4f0;
+    border-color: var(--text);
+  }
+
+  /* TWO COL */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 700px) { .two-col { grid-template-columns: 1fr; } }
+
+  select.field-input {
+    min-height: unset;
+    height: 36px;
+    resize: none;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="logo">TRADE<span>LOG</span></div>
+    <div class="header-date" id="header-date"></div>
+  </div>
+  <div class="header-right">
+    <span class="copy-confirm" id="save-confirm">SAVED ✓</span>
+    <button class="btn-save" onclick="saveData()">Save Draft</button>
+    <button class="btn-generate" onclick="generateSummary()">Generate Summary ▸</button>
+  </div>
+</header>
+
+<div class="app">
+
+  <!-- POSITIONS -->
+  <div class="section" id="sec-positions">
+    <div class="section-header" onclick="toggleSection('sec-positions')">
+      <div class="section-title"><span class="num">01</span>Positions</div>
+      <span class="collapse-icon">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="type-tabs">
+        <button class="type-tab active" onclick="setPositionTab('options', this)">Options</button>
+        <button class="type-tab" onclick="setPositionTab('stocks', this)">Stocks / Shares</button>
+      </div>
+
+      <!-- OPTIONS POSITIONS -->
+      <div id="options-positions">
+        <div class="positions-grid" id="options-grid">
+          <div class="position-row header-row">
+            <div class="cell"><span class="cell-label">Ticker</span></div>
+            <div class="cell"><span class="cell-label">Structure</span></div>
+            <div class="cell"><span class="cell-label">Strikes / Expiry</span></div>
+            <div class="cell"><span class="cell-label">Entry Cost</span></div>
+            <div class="cell"><span class="cell-label">Current Val</span></div>
+            <div class="cell"><span class="cell-label">P&L</span></div>
+            <div class="cell"><span class="cell-label">Thesis / Catalyst</span></div>
+            <div class="cell"></div>
+          </div>
+        </div>
+        <button class="add-position-btn" onclick="addOptionRow()">+ Add Options Position</button>
+      </div>
+
+      <!-- STOCK POSITIONS -->
+      <div id="stocks-positions" style="display:none">
+        <div class="positions-grid" id="stocks-grid">
+          <div class="position-row header-row" style="grid-template-columns: 80px 80px 90px 90px 90px 1fr 36px;">
+            <div class="cell"><span class="cell-label">Ticker</span></div>
+            <div class="cell"><span class="cell-label">Shares</span></div>
+            <div class="cell"><span class="cell-label">Avg Cost</span></div>
+            <div class="cell"><span class="cell-label">Current</span></div>
+            <div class="cell"><span class="cell-label">P&L</span></div>
+            <div class="cell"><span class="cell-label">Thesis</span></div>
+            <div class="cell"></div>
+          </div>
+        </div>
+        <button class="add-position-btn" onclick="addStockRow()">+ Add Stock Position</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MACRO THESIS -->
+  <div class="section" id="sec-macro">
+    <div class="section-header" onclick="toggleSection('sec-macro')">
+      <div class="section-title"><span class="num">02</span>Macro Thesis & Market Backdrop</div>
+      <span class="collapse-icon">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="two-col">
+        <div class="field-group">
+          <label class="field-label">Broad Market Read</label>
+          <textarea class="field-input" id="macro-broad" placeholder="SPX / QQQ trend, risk-on or risk-off, key levels watching..."></textarea>
+        </div>
+        <div class="field-group">
+          <label class="field-label">NVDA / AI Sector View</label>
+          <textarea class="field-input" id="macro-nvda" placeholder="Your current stance on NVDA, GTC catalysts, AI capex cycle..."></textarea>
+        </div>
+        <div class="field-group">
+          <label class="field-label">China / A-Share Portfolio</label>
+          <textarea class="field-input" id="macro-china" placeholder="Ping An holdings, policy tailwinds/headwinds, key names..."></textarea>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Rates / Macro Factors</label>
+          <textarea class="field-input" id="macro-rates" placeholder="Fed path, DXY, yield curve, anything driving your positioning..."></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STRATEGY RULES -->
+  <div class="section" id="sec-rules">
+    <div class="section-header" onclick="toggleSection('sec-rules')">
+      <div class="section-title"><span class="num">03</span>Active Strategy Rules</div>
+      <span class="collapse-icon">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="rules-list" id="rules-list"></div>
+      <button class="add-rule-btn" onclick="addRule()">+ Add Rule</button>
+    </div>
+  </div>
+
+  <!-- RECENT DECISIONS -->
+  <div class="section" id="sec-decisions">
+    <div class="section-header" onclick="toggleSection('sec-decisions')">
+      <div class="section-title"><span class="num">04</span>Recent Decisions & Lessons</div>
+      <span class="collapse-icon">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="field-group">
+        <label class="field-label">Last Session — What I Did & Why</label>
+        <textarea class="field-input" id="decisions-last" placeholder="Trades entered/exited, rationale, what triggered the move..."></textarea>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Lessons / Mistakes to Carry Forward</label>
+        <textarea class="field-input" id="decisions-lessons" placeholder="What worked, what didn't, pattern to avoid or repeat..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOMORROW'S FOCUS -->
+  <div class="section" id="sec-tomorrow">
+    <div class="section-header" onclick="toggleSection('sec-tomorrow')">
+      <div class="section-title"><span class="num">05</span>Tomorrow's Focus</div>
+      <span class="collapse-icon">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="two-col">
+        <div class="field-group">
+          <label class="field-label">Key Events / Catalysts Tomorrow</label>
+          <textarea class="field-input" id="tmr-events" placeholder="Earnings, Fed speakers, macro data releases, conf calls..."></textarea>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Planned Actions</label>
+          <textarea class="field-input" id="tmr-actions" placeholder="Roll, trim, add, close — what you're considering and at what levels..."></textarea>
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Key Levels to Watch</label>
+        <textarea class="field-input single-line" id="tmr-levels" style="height:36px; min-height:36px; resize:none;" placeholder="e.g. NVDA 105 support / 115 resistance, SPX 5600..."></textarea>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Questions for Claude Tomorrow</label>
+        <textarea class="field-input" id="tmr-questions" placeholder="Specific things you want researched or analyzed when you open the new chat..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- WATCHLIST -->
+  <div class="section" id="sec-watch">
+    <div class="section-header" onclick="toggleSection('sec-watch')">
+      <div class="section-title"><span class="num">06</span>Watchlist</div>
+      <span class="collapse-icon">▼</span>
+    </div>
+    <div class="section-body">
+      <div id="watchlist-grid"></div>
+      <button class="add-position-btn" onclick="addWatchItem()">+ Add to Watchlist</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- OUTPUT MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Daily Context Summary — Ready to Paste</div>
+      <div class="modal-actions">
+        <span class="copy-confirm" id="copy-confirm">COPIED ✓</span>
+        <button class="btn-copy" onclick="copyOutput()">Copy to Clipboard</button>
+        <button class="btn-close" onclick="closeModal()">Close</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <textarea id="output-text" spellcheck="false"></textarea>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ---- STATE ----
+let optionRows = [];
+let stockRows = [];
+let rules = [];
+let watchItems = [];
+const STORAGE_KEY = 'tradelog_v1';
+
+// ---- INIT ----
+document.addEventListener('DOMContentLoaded', () => {
+  updateDate();
+  loadData();
+  if (optionRows.length === 0) addOptionRow();
+  if (stockRows.length === 0) addStockRow();
+  if (rules.length === 0) {
+    ['No short-dated options within 5 days of earnings', 'Size max 5% per speculative position', 'Define exit before entry — set target and stop', 'Account for IV crush on pre-catalyst plays'].forEach(r => addRule(r));
+  }
+  if (watchItems.length === 0) addWatchItem();
+});
+
+function updateDate() {
+  const now = new Date();
+  const days = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  document.getElementById('header-date').textContent =
+    `${days[now.getDay()]} ${months[now.getMonth()]} ${String(now.getDate()).padStart(2,'0')}, ${now.getFullYear()}`;
+}
+
+// ---- COLLAPSE ----
+function toggleSection(id) {
+  document.getElementById(id).classList.toggle('collapsed');
+}
+
+// ---- POSITION TABS ----
+function setPositionTab(type, btn) {
+  document.querySelectorAll('.type-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('options-positions').style.display = type === 'options' ? '' : 'none';
+  document.getElementById('stocks-positions').style.display = type === 'stocks' ? '' : 'none';
+}
+
+// ---- OPTIONS ROWS ----
+function addOptionRow(data = {}) {
+  const id = Date.now() + Math.random();
+  optionRows.push(id);
+  const grid = document.getElementById('options-grid');
+  const row = document.createElement('div');
+  row.className = 'position-row';
+  row.id = `opt-${id}`;
+  row.innerHTML = `
+    <div class="cell"><input type="text" placeholder="NVDA" data-field="ticker" value="${data.ticker||''}"></div>
+    <div class="cell">
+      <select data-field="structure">
+        <option value="Bull Call Spread" ${data.structure==='Bull Call Spread'?'selected':''}>Bull Call Spread</option>
+        <option value="Bear Put Spread" ${data.structure==='Bear Put Spread'?'selected':''}>Bear Put Spread</option>
+        <option value="Long Call" ${data.structure==='Long Call'?'selected':''}>Long Call</option>
+        <option value="Long Put" ${data.structure==='Long Put'?'selected':''}>Long Put</option>
+        <option value="Covered Call" ${data.structure==='Covered Call'?'selected':''}>Covered Call</option>
+        <option value="Cash Secured Put" ${data.structure==='Cash Secured Put'?'selected':''}>Cash Secured Put</option>
+        <option value="Iron Condor" ${data.structure==='Iron Condor'?'selected':''}>Iron Condor</option>
+        <option value="Straddle" ${data.structure==='Straddle'?'selected':''}>Straddle</option>
+        <option value="Other" ${data.structure==='Other'?'selected':''}>Other</option>
+      </select>
+    </div>
+    <div class="cell cell-thesis"><input type="text" placeholder="e.g. 110/120C exp 5/16" data-field="strikes" value="${data.strikes||''}"></div>
+    <div class="cell"><input type="text" placeholder="$2.40" data-field="entry" value="${data.entry||''}"></div>
+    <div class="cell"><input type="text" placeholder="$3.10" data-field="current" value="${data.current||''}"></div>
+    <div class="cell"><input type="text" placeholder="+$420" data-field="pnl" value="${data.pnl||''}"></div>
+    <div class="cell cell-thesis"><input type="text" placeholder="Catalyst / thesis..." data-field="thesis" value="${data.thesis||''}"></div>
+    <div class="cell"><button class="remove-btn" onclick="removeRow('opt-${id}', optionRows, ${id})">×</button></div>
+  `;
+  grid.appendChild(row);
+}
+
+function addStockRow(data = {}) {
+  const id = Date.now() + Math.random();
+  stockRows.push(id);
+  const grid = document.getElementById('stocks-grid');
+  const row = document.createElement('div');
+  row.className = 'position-row';
+  row.id = `stk-${id}`;
+  row.style.gridTemplateColumns = '80px 80px 90px 90px 90px 1fr 36px';
+  row.innerHTML = `
+    <div class="cell"><input type="text" placeholder="NVDA" data-field="ticker" value="${data.ticker||''}"></div>
+    <div class="cell"><input type="text" placeholder="100" data-field="shares" value="${data.shares||''}"></div>
+    <div class="cell"><input type="text" placeholder="$98.50" data-field="avgcost" value="${data.avgcost||''}"></div>
+    <div class="cell"><input type="text" placeholder="$110.20" data-field="current" value="${data.current||''}"></div>
+    <div class="cell"><input type="text" placeholder="+$1,170" data-field="pnl" value="${data.pnl||''}"></div>
+    <div class="cell cell-thesis"><input type="text" placeholder="Hold thesis..." data-field="thesis" value="${data.thesis||''}"></div>
+    <div class="cell"><button class="remove-btn" onclick="removeRow('stk-${id}', stockRows, ${id})">×</button></div>
+  `;
+  grid.appendChild(row);
+}
+
+function removeRow(elemId, arr, id) {
+  const idx = arr.indexOf(id);
+  if (idx > -1) arr.splice(idx, 1);
+  const el = document.getElementById(elemId);
+  if (el) el.remove();
+}
+
+// ---- RULES ----
+function addRule(text = '') {
+  const id = Date.now() + Math.random();
+  rules.push(id);
+  const list = document.getElementById('rules-list');
+  const item = document.createElement('div');
+  item.className = 'rule-item';
+  item.id = `rule-${id}`;
+  item.innerHTML = `
+    <input type="text" placeholder="e.g. No short-dated options within 5 days of earnings" value="${text}">
+    <button class="remove-btn" onclick="removeRule('rule-${id}', ${id})">×</button>
+  `;
+  list.appendChild(item);
+}
+
+function removeRule(elemId, id) {
+  const idx = rules.indexOf(id);
+  if (idx > -1) rules.splice(idx, 1);
+  document.getElementById(elemId)?.remove();
+}
+
+// ---- WATCHLIST ----
+function addWatchItem(data = {}) {
+  const id = Date.now() + Math.random();
+  watchItems.push(id);
+  const grid = document.getElementById('watchlist-grid');
+  const row = document.createElement('div');
+  row.className = 'watchlist-row';
+  row.id = `watch-${id}`;
+  row.innerHTML = `
+    <div class="watch-cell"><input type="text" placeholder="Ticker" data-field="ticker" value="${data.ticker||''}"></div>
+    <div class="watch-cell"><input type="text" placeholder="What I'm watching for..." data-field="note" value="${data.note||''}"></div>
+    <div class="watch-cell"><input type="text" placeholder="Target level" data-field="level" value="${data.level||''}"></div>
+    <div class="watch-cell" style="display:flex;align-items:center;justify-content:center;border:1px solid var(--border);">
+      <button class="remove-btn" onclick="removeWatch('watch-${id}', ${id})">×</button>
+    </div>
+  `;
+  grid.appendChild(row);
+}
+
+function removeWatch(elemId, id) {
+  const idx = watchItems.indexOf(id);
+  if (idx > -1) watchItems.splice(idx, 1);
+  document.getElementById(elemId)?.remove();
+}
+
+// ---- READ DATA ----
+function getRowData(rowEl, fields) {
+  const data = {};
+  fields.forEach(f => {
+    const el = rowEl.querySelector(`[data-field="${f}"]`);
+    if (el) data[f] = el.value;
+  });
+  return data;
+}
+
+function readAll() {
+  const optFields = ['ticker','structure','strikes','entry','current','pnl','thesis'];
+  const stkFields = ['ticker','shares','avgcost','current','pnl','thesis'];
+  const opts = optionRows.map(id => {
+    const el = document.getElementById(`opt-${id}`);
+    return el ? getRowData(el, optFields) : null;
+  }).filter(Boolean);
+  const stks = stockRows.map(id => {
+    const el = document.getElementById(`stk-${id}`);
+    return el ? getRowData(el, stkFields) : null;
+  }).filter(Boolean);
+  const rulesList = rules.map(id => {
+    const el = document.getElementById(`rule-${id}`);
+    return el ? el.querySelector('input').value : null;
+  }).filter(Boolean);
+  const watchList = watchItems.map(id => {
+    const el = document.getElementById(`watch-${id}`);
+    return el ? getRowData(el, ['ticker','note','level']) : null;
+  }).filter(Boolean);
+
+  return {
+    options: opts,
+    stocks: stks,
+    rules: rulesList,
+    watchlist: watchList,
+    macro: {
+      broad: document.getElementById('macro-broad').value,
+      nvda: document.getElementById('macro-nvda').value,
+      china: document.getElementById('macro-china').value,
+      rates: document.getElementById('macro-rates').value,
+    },
+    decisions: {
+      last: document.getElementById('decisions-last').value,
+      lessons: document.getElementById('decisions-lessons').value,
+    },
+    tomorrow: {
+      events: document.getElementById('tmr-events').value,
+      actions: document.getElementById('tmr-actions').value,
+      levels: document.getElementById('tmr-levels').value,
+      questions: document.getElementById('tmr-questions').value,
+    }
+  };
+}
+
+// ---- SAVE / LOAD ----
+function saveData() {
+  const data = readAll();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  const confirm = document.getElementById('save-confirm');
+  confirm.classList.add('show');
+  setTimeout(() => confirm.classList.remove('show'), 2000);
+}
+
+function loadData() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return;
+  try {
+    const d = JSON.parse(raw);
+    // positions
+    if (d.options?.length) d.options.forEach(r => addOptionRow(r));
+    if (d.stocks?.length) d.stocks.forEach(r => addStockRow(r));
+    // rules
+    if (d.rules?.length) { rules = []; document.getElementById('rules-list').innerHTML = ''; d.rules.forEach(r => addRule(r)); }
+    // watchlist
+    if (d.watchlist?.length) { watchItems = []; document.getElementById('watchlist-grid').innerHTML = ''; d.watchlist.forEach(r => addWatchItem(r)); }
+    // text fields
+    if (d.macro) {
+      document.getElementById('macro-broad').value = d.macro.broad||'';
+      document.getElementById('macro-nvda').value = d.macro.nvda||'';
+      document.getElementById('macro-china').value = d.macro.china||'';
+      document.getElementById('macro-rates').value = d.macro.rates||'';
+    }
+    if (d.decisions) {
+      document.getElementById('decisions-last').value = d.decisions.last||'';
+      document.getElementById('decisions-lessons').value = d.decisions.lessons||'';
+    }
+    if (d.tomorrow) {
+      document.getElementById('tmr-events').value = d.tomorrow.events||'';
+      document.getElementById('tmr-actions').value = d.tomorrow.actions||'';
+      document.getElementById('tmr-levels').value = d.tomorrow.levels||'';
+      document.getElementById('tmr-questions').value = d.tomorrow.questions||'';
+    }
+  } catch(e) { console.error('Load failed', e); }
+}
+
+// ---- GENERATE ----
+function generateSummary() {
+  const d = readAll();
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+  let out = [];
+  out.push(`=== TRADING CONTEXT BRIEF — ${dateStr.toUpperCase()} ===\n`);
+
+  // Options
+  const opts = d.options.filter(o => o.ticker?.trim());
+  if (opts.length) {
+    out.push('── OPTIONS POSITIONS ──');
+    opts.forEach(o => {
+      out.push(`${o.ticker} | ${o.structure} | ${o.strikes}`);
+      if (o.entry || o.current || o.pnl) out.push(`  Entry: ${o.entry||'–'}  Current: ${o.current||'–'}  P&L: ${o.pnl||'–'}`);
+      if (o.thesis) out.push(`  Thesis: ${o.thesis}`);
+    });
+    out.push('');
+  }
+
+  // Stocks
+  const stks = d.stocks.filter(s => s.ticker?.trim());
+  if (stks.length) {
+    out.push('── STOCK POSITIONS ──');
+    stks.forEach(s => {
+      out.push(`${s.ticker} | ${s.shares} shares | Avg ${s.avgcost||'–'} | Current ${s.current||'–'} | P&L ${s.pnl||'–'}`);
+      if (s.thesis) out.push(`  Thesis: ${s.thesis}`);
+    });
+    out.push('');
+  }
+
+  // Macro
+  out.push('── MACRO THESIS ──');
+  if (d.macro.broad) out.push(`Broad Market: ${d.macro.broad}`);
+  if (d.macro.nvda) out.push(`NVDA/AI: ${d.macro.nvda}`);
+  if (d.macro.china) out.push(`China/A-Shares: ${d.macro.china}`);
+  if (d.macro.rates) out.push(`Rates/Macro: ${d.macro.rates}`);
+  out.push('');
+
+  // Rules
+  const activeRules = d.rules.filter(r => r?.trim());
+  if (activeRules.length) {
+    out.push('── ACTIVE STRATEGY RULES ──');
+    activeRules.forEach(r => out.push(`• ${r}`));
+    out.push('');
+  }
+
+  // Decisions
+  if (d.decisions.last || d.decisions.lessons) {
+    out.push('── RECENT DECISIONS & LESSONS ──');
+    if (d.decisions.last) out.push(`Last Session: ${d.decisions.last}`);
+    if (d.decisions.lessons) out.push(`Lessons: ${d.decisions.lessons}`);
+    out.push('');
+  }
+
+  // Tomorrow
+  out.push('── TODAY\'S FOCUS ──');
+  if (d.tomorrow.events) out.push(`Key Events: ${d.tomorrow.events}`);
+  if (d.tomorrow.actions) out.push(`Planned Actions: ${d.tomorrow.actions}`);
+  if (d.tomorrow.levels) out.push(`Key Levels: ${d.tomorrow.levels}`);
+  if (d.tomorrow.questions) out.push(`\nQuestions for you:\n${d.tomorrow.questions}`);
+  out.push('');
+
+  // Watchlist
+  const watches = d.watchlist.filter(w => w.ticker?.trim());
+  if (watches.length) {
+    out.push('── WATCHLIST ──');
+    watches.forEach(w => {
+      out.push(`${w.ticker}${w.level ? ' @ ' + w.level : ''}${w.note ? ' — ' + w.note : ''}`);
+    });
+    out.push('');
+  }
+
+  out.push('[ Screenshot of current positions attached ]');
+  out.push('\nPlease research current macro conditions and relevant news for the above, then provide your read and any tactical suggestions.');
+
+  document.getElementById('output-text').value = out.join('\n');
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+}
+
+function copyOutput() {
+  const text = document.getElementById('output-text').value;
+  navigator.clipboard.writeText(text).then(() => {
+    const c = document.getElementById('copy-confirm');
+    c.classList.add('show');
+    setTimeout(() => c.classList.remove('show'), 2000);
+  });
+}
+
+// Close modal on overlay click
+document.getElementById('modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// Auto-save on change
+document.addEventListener('input', () => {
+  clearTimeout(window._autosave);
+  window._autosave = setTimeout(saveData, 1500);
+});
+
+// Keyboard shortcut
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 's') { e.preventDefault(); saveData(); }
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') generateSummary();
+});
+</script>
+</body>
+</html>
