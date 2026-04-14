@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TradeLog</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#f0efe9;--surf:#fff;--bdr:#dedad0;--bdr2:#c4bfb5;
+  --tx:#17160e;--muted:#6a6860;--faint:#aeaa a0;
+  --acc:#d45000;--accl:#fff2e8;
+  --grn:#1a6830;--grnb:#eaf3ec;
+  --red:#a81818;--redb:#faeaea;
+  --amb:#8a5400;--ambb:#fff7e0;
+  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
+  --dk:#17160e;--dk2:#201f16;--dk3:#28271d;--dkb:#333228;--dkt:#c4c0b0;--dkm:#62605a;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--sans);background:var(--bg);color:var(--tx);min-height:100vh;font-size:13px;line-height:1.5;}
+
+/* HEADER */
+header{background:var(--dk);padding:0 26px;height:46px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;border-bottom:1px solid var(--dkb);}
+.logo{font-family:var(--mono);font-size:12px;font-weight:500;letter-spacing:.08em;color:#ede9d8;}
+.logo em{color:var(--acc);font-style:normal;}
+.hdate{font-family:var(--mono);font-size:11px;color:var(--dkm);letter-spacing:.05em;}
+.hr{display:flex;align-items:center;gap:8px;}
+.btn{border:none;cursor:pointer;font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;padding:6px 14px;transition:all .15s;}
+.btnp{background:var(--acc);color:#fff;}.btnp:hover{background:#b04000;}
+.btng{background:transparent;color:#888;border:1px solid #383630;}.btng:hover{color:#ccc;border-color:#666;}
+.fl{font-family:var(--mono);font-size:10px;letter-spacing:.06em;opacity:0;transition:opacity .3s;}
+.fl.on{opacity:1;}.fl.grn{color:#3db870;}.fl.red{color:#e05555;}
+
+/* APP */
+.app{max-width:1060px;margin:0 auto;padding:16px 16px 80px;display:flex;flex-direction:column;gap:2px;}
+
+/* OVERNIGHT */
+.ovn{background:var(--redb);border:1.5px solid #dd8888;padding:10px 16px;display:none;align-items:center;gap:10px;margin-bottom:2px;}
+.ovn.on{display:flex;}
+.ovn-tx{font-family:var(--mono);font-size:11px;color:var(--red);line-height:1.6;}
+.ovn-tx b{font-size:10px;letter-spacing:.07em;text-transform:uppercase;display:block;margin-bottom:2px;}
+
+/* SECTION */
+.sec{background:var(--surf);border:1px solid var(--bdr);}
+.sh{display:flex;align-items:center;justify-content:space-between;padding:9px 15px;background:#f7f6f0;border-bottom:1px solid var(--bdr);cursor:pointer;user-select:none;}
+.sh:hover{background:#efede6;}
+.st{font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
+.st .n{color:var(--acc);margin-right:9px;}
+.ca{font-size:10px;color:var(--faint);transition:transform .15s;}
+.sec.col .ca{transform:rotate(-90deg);}
+.sec.col .sb{display:none;}
+.sb{padding:15px;}
+
+/* DARK SEC */
+.dk-s{background:var(--dk);border-color:var(--dkb);}
+.dk-s .sh{background:var(--dk2);border-bottom-color:var(--dkb);}
+.dk-s .sh:hover{background:var(--dk3);}
+.dk-s .st{color:var(--dkm);}
+.dk-s .sb{background:var(--dk);padding:13px 15px;}
+
+/* WEEK BAR */
+.wbar{display:flex;gap:2px;margin-bottom:11px;}
+.wd{flex:1;background:var(--dk2);border:1px solid var(--dkb);padding:7px 9px;display:flex;flex-direction:column;gap:3px;}
+.wd.tod{border-color:var(--acc);background:#1c1a10;}
+.wdl{font-family:var(--mono);font-size:9px;color:var(--dkm);letter-spacing:.07em;text-transform:uppercase;}
+.wdl .dot{color:var(--acc);}
+.wdi{background:transparent;border:none;outline:none;font-family:var(--mono);font-size:13px;font-weight:500;color:#3e3d36;width:100%;padding:0;}
+.wdi::placeholder{color:#282720;}
+.wdi.p{color:#3db870;}.wdi.ng{color:#e05555;}
+
+/* TRADE ENTRY */
+.tent{display:flex;gap:5px;margin-bottom:7px;}
+.ti{flex:1;background:var(--dk2);border:1px solid var(--dkb);padding:8px 11px;font-family:var(--mono);font-size:12px;color:#e4e0ce;outline:none;transition:border-color .15s;}
+.ti:focus{border-color:#555;}.ti::placeholder{color:#2c2b22;}
+.ti.sm{max-width:115px;}
+.tadd{background:var(--dk3);border:1px solid var(--dkb);color:#888;padding:0 13px;font-size:20px;cursor:pointer;transition:all .15s;font-family:var(--mono);}
+.tadd:hover{background:var(--acc);border-color:var(--acc);color:#fff;}
+.tlist{display:flex;flex-direction:column;gap:2px;}
+.titem{display:flex;align-items:flex-start;gap:7px;background:#0e0d07;border:1px solid #201f14;padding:7px 11px;}
+.titem:hover{border-color:var(--dkb);}
+.tta{flex:1;background:transparent;border:none;outline:none;font-family:var(--mono);font-size:12px;color:#a8a498;resize:none;min-height:18px;line-height:1.5;padding:0;}
+.tpnl{font-family:var(--mono);font-size:12px;font-weight:500;white-space:nowrap;padding:1px 6px;align-self:center;}
+.tpnl.p{color:#3db870;}.tpnl.ng{color:#e05555;}
+.tdel{background:none;border:none;color:#2e2d24;cursor:pointer;font-size:14px;padding:0;transition:color .15s;align-self:center;}
+.tdel:hover{color:#e05555;}
+.wtot{display:flex;align-items:center;justify-content:space-between;padding:8px 11px;background:#0a0a04;border:1px solid #1a1910;margin-top:7px;}
+.wtl{font-family:var(--mono);font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:#2e2d24;}
+.wtv{font-family:var(--mono);font-size:14px;font-weight:500;color:#3db870;}
+.wtv.ng{color:#e05555;}
+
+/* POSITIONS */
+.tabs{display:flex;gap:2px;margin-bottom:11px;}
+.tab{padding:5px 13px;font-family:var(--mono);font-size:10px;letter-spacing:.07em;text-transform:uppercase;cursor:pointer;border:1px solid var(--bdr);background:transparent;color:var(--muted);transition:all .15s;}
+.tab.on{background:var(--dk);color:#ede9d8;border-color:var(--dk);}
+.pgrid{display:flex;flex-direction:column;gap:2px;}
+.pr{display:grid;border:1px solid var(--bdr);background:#fafaf6;}
+.pr.hdr{background:#eeecea;border-color:var(--bdr2);}
+.pr.opt{grid-template-columns:68px 108px 1fr 75px 75px 75px 1fr 28px;}
+.pr.stk{grid-template-columns:68px 65px 78px 78px 78px 1fr 28px;}
+.pc{padding:6px 8px;border-right:1px solid var(--bdr);display:flex;align-items:center;}
+.pc:last-child{border-right:none;justify-content:center;}
+.pcl{font-family:var(--mono);font-size:9px;font-weight:500;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);}
+.pc input,.pc select{width:100%;background:transparent;border:none;outline:none;font-family:var(--mono);font-size:12px;color:var(--tx);}
+.pc input::placeholder{color:#ccc8be;}
+.pc select{cursor:pointer;}
+.rm{background:none;border:none;cursor:pointer;color:#ccc;font-size:14px;padding:0;transition:color .15s;}
+.rm:hover{color:var(--red);}
+.addb{margin-top:7px;background:transparent;border:1px dashed var(--bdr2);padding:7px 13px;font-family:var(--mono);font-size:11px;color:var(--muted);cursor:pointer;letter-spacing:.04em;width:100%;text-align:left;transition:all .15s;}
+.addb:hover{border-color:var(--acc);color:var(--acc);background:var(--accl);}
+
+/* FIELDS */
+.f{margin-bottom:13px;}.f:last-child{margin-bottom:0;}
+.fl2{display:block;font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;}
+.ft{width:100%;background:#f9f9f4;border:1px solid var(--bdr);padding:8px 11px;font-family:var(--sans);font-size:13px;color:var(--tx);outline:none;resize:vertical;min-height:65px;line-height:1.6;transition:border-color .15s;}
+.ft:focus{border-color:var(--bdr2);}.ft::placeholder{color:#bdbab0;}
+.ft.sm{min-height:unset;height:34px;resize:none;}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:13px;}
+@media(max-width:660px){.two{grid-template-columns:1fr;}}
+
+/* RULES */
+.rr{display:flex;gap:5px;margin-bottom:5px;}
+.ri{flex:1;background:#f9f9f4;border:1px solid var(--bdr);padding:7px 10px;font-family:var(--mono);font-size:12px;color:var(--tx);outline:none;transition:border-color .15s;}
+.ri:focus{border-color:var(--bdr2);}.ri::placeholder{color:#bdbab0;}
+
+/* UPLOADS */
+.urow{display:flex;gap:9px;}
+.uslot{flex:1;border:1.5px dashed var(--bdr2);background:#f9f9f4;padding:16px;text-align:center;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;}
+.uslot:hover{border-color:var(--acc);background:var(--accl);}
+.uslot.has{border-style:solid;border-color:var(--grn);background:var(--grnb);}
+.uslot input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;}
+.uico{font-size:20px;margin-bottom:5px;}
+.ulbl{font-family:var(--mono);font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);}
+.ulbl.has{color:var(--grn);}
+.unm{font-family:var(--mono);font-size:11px;color:var(--grn);margin-top:3px;word-break:break-all;}
+.uclr{margin-top:5px;background:none;border:none;font-family:var(--mono);font-size:10px;color:var(--muted);cursor:pointer;text-decoration:underline;}
+.uclr:hover{color:var(--red);}
+.uhint{margin-top:9px;font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.8;}
+
+/* MODAL */
+.ovl{display:none;position:fixed;inset:0;background:rgba(15,14,8,.78);z-index:300;align-items:center;justify-content:center;}
+.ovl.on{display:flex;}
+.modal{background:var(--surf);border:1px solid var(--bdr2);width:760px;max-width:96vw;max-height:88vh;display:flex;flex-direction:column;}
+.mh{display:flex;align-items:center;justify-content:space-between;padding:11px 17px;border-bottom:1px solid var(--bdr);background:#f7f6f0;}
+.mt{font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);}
+.ma{display:flex;align-items:center;gap:8px;}
+.mb{flex:1;overflow-y:auto;padding:15px;}
+#out{width:100%;min-height:440px;background:#f9f9f4;border:1px solid var(--bdr);padding:13px;font-family:var(--mono);font-size:12px;color:var(--tx);line-height:1.8;resize:none;outline:none;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">TRADE<em>LOG</em></div>
+  <div class="hdate" id="hdate"></div>
+  <div class="hr">
+    <span class="fl grn" id="svfl">SAVED ✓</span>
+    <button class="btn btng" onclick="save()">Save</button>
+    <button class="btn btnp" onclick="gen()">Generate Summary ▸</button>
+  </div>
+</header>
+
+<div class="app">
+
+  <!-- OVERNIGHT WARNING -->
+  <div class="ovn" id="ovn">
+    <div style="font-size:18px">⚠️</div>
+    <div class="ovn-tx"><b>Overnight Risk Warning</b>High-impact events flagged in catalysts field. Review before leaving positions on overnight.</div>
+  </div>
+
+  <!-- 00 TRADES -->
+  <div class="sec dk-s" id="s0">
+    <div class="sh" onclick="tog('s0')">
+      <div class="st"><span class="n">00</span>Today's Trades</div>
+      <span class="ca">▼</span>
+    </div>
+    <div class="sb">
+      <div class="wbar" id="wb"></div>
+      <div class="tent">
+        <input class="ti" id="td" placeholder="e.g.  NVDA 192.5C ×4  bought @ 0.55 / sold @ 1.20" onkeydown="if(event.key==='Enter')addT()">
+        <input class="ti sm" id="tp" placeholder="P&L  +400" onkeydown="if(event.key==='Enter')addT()">
+        <button class="tadd" onclick="addT()">+</button>
+      </div>
+      <div class="tlist" id="tl"></div>
+      <div class="wtot">
+        <span class="wtl">Week Total</span>
+        <span class="wtv" id="wt">$0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 01 POSITIONS -->
+  <div class="sec" id="s1">
+    <div class="sh" onclick="tog('s1')">
+      <div class="st"><span class="n">01</span>Open Positions</div>
+      <span class="ca">▼</span>
+    </div>
+    <div class="sb">
+      <div class="tabs">
+        <button class="tab on" onclick="swtab('opt',this)">Options</button>
+        <button class="tab" onclick="swtab('stk',this)">Stocks / Shares</button>
+      </div>
+      <div id="po">
+        <div class="pgrid" id="go">
+          <div class="pr opt hdr">
+            <div class="pc"><span class="pcl">Ticker</span></div>
+            <div class="pc"><span class="pcl">Structure</span></div>
+            <div class="pc"><span class="pcl">Strikes / Expiry</span></div>
+            <div class="pc"><span class="pcl">Entry</span></div>
+            <div class="pc"><span class="pcl">Current</span></div>
+            <div class="pc"><span class="pcl">P&amp;L</span></div>
+            <div class="pc"><span class="pcl">Thesis / Catalyst</span></div>
+            <div class="pc"></div>
+          </div>
+        </div>
+        <button class="addb" onclick="aOpt()">+ Add Options Position</button>
+      </div>
+      <div id="ps" style="display:none">
+        <div class="pgrid" id="gs">
+          <div class="pr stk hdr">
+            <div class="pc"><span class="pcl">Ticker</span></div>
+            <div class="pc"><span class="pcl">Shares</span></div>
+            <div class="pc"><span class="pcl">Avg Cost</span></div>
+            <div class="pc"><span class="pcl">Current</span></div>
+            <div class="pc"><span class="pcl">P&amp;L</span></div>
+            <div class="pc"><span class="pcl">Thesis</span></div>
+            <div class="pc"></div>
+          </div>
+        </div>
+        <button class="addb" onclick="aStk()">+ Add Stock Position</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 02 MACRO + CATALYSTS -->
+  <div class="sec" id="s2">
+    <div class="sh" onclick="tog('s2')">
+      <div class="st"><span class="n">02</span>Macro Thesis &amp; Catalysts</div>
+      <span class="ca">▼</span>
+    </div>
+    <div class="sb">
+      <div class="two" style="margin-bottom:13px">
+        <div class="f">
+          <label class="fl2">My Broad Market Read</label>
+          <textarea class="ft" id="mbroad" placeholder="SPX/QQQ trend, risk-on/off, key levels...&#10;&#10;Leave blank → Claude will assess current market conditions for you."></textarea>
+        </div>
+        <div class="f">
+          <label class="fl2">My NVDA / AI Sector View</label>
+          <textarea class="ft" id="mnvda" placeholder="Your NVDA stance, technicals, near-term thesis...&#10;&#10;Leave blank → Claude will give you a current read."></textarea>
+        </div>
+      </div>
+      <div class="f">
+        <label class="fl2">Known Catalysts / Notes (paste from previous session)</label>
+        <textarea class="ft" id="mcats" style="min-height:80px" placeholder="Paste catalyst list from last Claude session here so it carries forward...&#10;&#10;Leave blank → Claude will research all upcoming catalysts fresh."></textarea>
+      </div>
+      <div class="f" style="margin-bottom:0">
+        <label class="fl2">Rates / Macro Factors</label>
+        <textarea class="ft sm" id="mrates" placeholder="Fed path, DXY, yields, oil price, anything macro...  Leave blank → Claude will assess."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- 03 RULES -->
+  <div class="sec" id="s3">
+    <div class="sh" onclick="tog('s3')">
+      <div class="st"><span class="n">03</span>Active Strategy Rules</div>
+      <span class="ca">▼</span>
+    </div>
+    <div class="sb">
+      <div id="rl"></div>
+      <button class="addb" onclick="aRule()">+ Add Rule</button>
+    </div>
+  </div>
+
+  <!-- 04 LESSONS -->
+  <div class="sec" id="s4">
+    <div class="sh" onclick="tog('s4')">
+      <div class="st"><span class="n">04</span>Recent Decisions &amp; Lessons</div>
+      <span class="ca">▼</span>
+    </div>
+    <div class="sb">
+      <div class="f" style="margin-bottom:0">
+        <label class="fl2">What happened + what I learned</label>
+        <textarea class="ft" style="min-height:100px" id="dless" placeholder="Trades you made, why you made them, what worked, what didn't, patterns to carry forward..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- 05 PLAN -->
+  <div class="sec" id="s5">
+    <div class="sh" onclick="tog('s5')">
+      <div class="st"><span class="n">05</span>Planned Actions &amp; Questions</div>
+      <span class="ca">▼</span>
+    </div>
+    <div class="sb">
+      <div class="f">
+        <label class="fl2">What I Plan to Do &amp; At What Levels</label>
+        <textarea class="ft" id="pact" placeholder="Roll, trim, add, close — what you're considering and at what price levels, key support/resistance..."></textarea>
+      </div>
+      <div class="f" style="margin-bottom:0">
+        <label class="fl2">My Specific Questions for Claude</label>
+        <textarea class="ft" id="pqs" placeholder="Anything specific you want researched, analyzed, or debated..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- 06 ATTACHMENTS -->
+  <div class="sec" id="s6">
+    <div class="sh" onclick="tog('s6')">
+      <div class="st"><span class="n">06</span>Attachments</div>
+      <span class="ca">▼</span>
+    </div>
+    <div class="sb">
+      <div class="urow">
+        <div class="uslot" id="usp" onclick="document.getElementById('fp').click()">
+          <input type="file" id="fp" accept="image/*" onchange="hup('p',this)">
+          <div class="uico">📊</div>
+          <div class="ulbl" id="ulp">Positions Screenshot</div>
+          <div class="unm" id="unp"></div>
+          <button class="uclr" id="ucp" style="display:none" onclick="cup(event,'p')">Remove</button>
+        </div>
+        <div class="uslot" id="usa" onclick="document.getElementById('fa').click()">
+          <input type="file" id="fa" accept=".pdf,image/*" onchange="hup('a',this)">
+          <div class="uico">📄</div>
+          <div class="ulbl" id="ula">Activity Statement PDF</div>
+          <div class="unm" id="una"></div>
+          <button class="uclr" id="uca" style="display:none" onclick="cup(event,'a')">Remove</button>
+        </div>
+      </div>
+      <div class="uhint">
+        Drag files into Claude chat alongside the summary. &nbsp;
+        <b>Positions:</b> IBKR → Portfolio → Positions tab &nbsp;|&nbsp;
+        <b>Activity PDF:</b> IBKR → Reports → Activity Statements → Last 7 Days
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL -->
+<div class="ovl" id="modal">
+  <div class="modal">
+    <div class="mh">
+      <div class="mt">Context Brief — Paste into New Chat + Attach Screenshots</div>
+      <div class="ma">
+        <span class="fl grn" id="cpfl">COPIED ✓</span>
+        <button class="btn btnp" onclick="cp()">Copy</button>
+        <button class="btn btng" onclick="cm()">Close</button>
+      </div>
+    </div>
+    <div class="mb"><textarea id="out" spellcheck="false"></textarea></div>
+  </div>
+</div>
+
+<script>
+// STATE
+let oR=[],sR=[],rIds=[],trades=[],wP={Mon:'',Tue:'',Wed:'',Thu:'',Fri:''};
+let ups={p:null,a:null};
+const SK='tl_v4';
+
+// BOOT
+document.addEventListener('DOMContentLoaded',()=>{
+  hdate(); load(); renderW(); renderT(); chkOvn();
+  if(!oR.length) aOpt();
+  if(!sR.length) aStk();
+  if(!rIds.length){
+    ['No short-dated options within 5 days of earnings',
+     'Max 5% portfolio per speculative position',
+     'Define hard exit (target + stop) before entering any trade',
+     'Account for IV crush on all pre-catalyst plays',
+     '80% profit on any position → exit half immediately',
+     'EODs: 30% profit → exit all. Extra upside is a bonus, never a plan.',
+     'Always check political/presidential calendar before overnight positions'
+    ].forEach(r=>aRule(r));
+  }
+});
+
+function hdate(){
+  const n=new Date();
+  const D=['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  const M=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  document.getElementById('hdate').textContent=`${D[n.getDay()]}  ${M[n.getMonth()]} ${String(n.getDate()).padStart(2,'0')}, ${n.getFullYear()}`;
+}
+
+function tog(id){document.getElementById(id).classList.toggle('col');}
+
+function swtab(t,b){
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');
+  document.getElementById('po').style.display=t==='opt'?'':'none';
+  document.getElementById('ps').style.display=t==='stk'?'':'none';
+}
+
+// WEEK BAR
+function renderW(){
+  const days=['Mon','Tue','Wed','Thu','Fri'];
+  const tn=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][new Date().getDay()];
+  document.getElementById('wb').innerHTML=days.map(d=>{
+    const v=wP[d]||'';const n=ppnl(v);const it=d===tn;
+    return `<div class="wd${it?' tod':''}">
+      <div class="wdl">${d}${it?'<span class="dot"> ◀</span>':''}</div>
+      <input class="wdi${n===null?'':n>=0?' p':' ng'}" placeholder="—" value="${x(v)}"
+        oninput="wP['${d}']=this.value;swi(this);updW();save();">
+    </div>`;
+  }).join('');
+}
+function swi(el){const n=ppnl(el.value);el.className='wdi'+(n===null?'':n>=0?' p':' ng');}
+
+// TRADES
+function addT(){
+  const de=document.getElementById('td'),pe=document.getElementById('tp');
+  const t=de.value.trim();if(!t)return;
+  trades.push({id:Date.now(),text:t,pnl:pe.value.trim()});
+  de.value='';pe.value='';renderT();save();
+}
+function remT(id){trades=trades.filter(t=>t.id!==id);renderT();save();}
+function updT(id,f,v){const t=trades.find(t=>t.id===id);if(t){t[f]=v;save();}}
+function renderT(){
+  const L=document.getElementById('tl');L.innerHTML='';
+  trades.forEach(t=>{
+    const n=ppnl(t.pnl),cls=n===null?'':n>=0?' p':' ng';
+    const dp=n!==null?(n>=0?'+$':'-$')+Math.abs(n).toLocaleString():t.pnl;
+    const el=document.createElement('div');el.className='titem';
+    el.innerHTML=`<textarea class="tta" rows="1" oninput="ar(this);updT(${t.id},'text',this.value)">${x(t.text)}</textarea>
+      ${t.pnl?`<span class="tpnl${cls}">${dp}</span>`:''}
+      <button class="tdel" onclick="remT(${t.id})">×</button>`;
+    L.appendChild(el);setTimeout(()=>ar(el.querySelector('textarea')),0);
+  });
+  updW();
+}
+function updW(){
+  const hd=Object.values(wP).some(v=>v&&v.trim());
+  const tot=hd?Object.values(wP).reduce((s,v)=>s+(ppnl(v)||0),0):trades.reduce((s,t)=>s+(ppnl(t.pnl)||0),0);
+  const el=document.getElementById('wt');
+  el.textContent=(tot>=0?'+$':'-$')+Math.abs(tot).toLocaleString();
+  el.className='wtv'+(tot<0?' ng':'');
+}
+
+// OPTIONS
+function aOpt(d={}){
+  const id=uid();oR.push(id);
+  const g=document.getElementById('go');
+  const r=document.createElement('div');r.className='pr opt';r.id=`o${id}`;
+  r.innerHTML=`
+    <div class="pc"><input placeholder="NVDA" data-f="ticker" value="${x(d.ticker||'')}"></div>
+    <div class="pc"><select data-f="structure">${['Bull Call Spread','Bear Put Spread','Long Call','Long Put','Covered Call','Cash Secured Put','Iron Condor','Straddle','LEAP Call','LEAP Put','Other'].map(s=>`<option${d.structure===s?' selected':''}>${s}</option>`).join('')}</select></div>
+    <div class="pc"><input placeholder="195/205C exp 5/16" data-f="strikes" value="${x(d.strikes||'')}"></div>
+    <div class="pc"><input placeholder="$1.20" data-f="entry" value="${x(d.entry||'')}"></div>
+    <div class="pc"><input placeholder="$2.40" data-f="current" value="${x(d.current||'')}"></div>
+    <div class="pc"><input placeholder="+$480" data-f="pnl" value="${x(d.pnl||'')}"></div>
+    <div class="pc"><input placeholder="Thesis..." data-f="thesis" value="${x(d.thesis||'')}"></div>
+    <div class="pc"><button class="rm" onclick="rmR('o${id}',oR,${id})">×</button></div>`;
+  g.appendChild(r);
+}
+
+// STOCKS
+function aStk(d={}){
+  const id=uid();sR.push(id);
+  const g=document.getElementById('gs');
+  const r=document.createElement('div');r.className='pr stk';r.id=`s${id}`;
+  r.innerHTML=`
+    <div class="pc"><input placeholder="IREN" data-f="ticker" value="${x(d.ticker||'')}"></div>
+    <div class="pc"><input placeholder="200" data-f="shares" value="${x(d.shares||'')}"></div>
+    <div class="pc"><input placeholder="$8.20" data-f="avgcost" value="${x(d.avgcost||'')}"></div>
+    <div class="pc"><input placeholder="$9.10" data-f="current" value="${x(d.current||'')}"></div>
+    <div class="pc"><input placeholder="+$180" data-f="pnl" value="${x(d.pnl||'')}"></div>
+    <div class="pc"><input placeholder="Hold thesis..." data-f="thesis" value="${x(d.thesis||'')}"></div>
+    <div class="pc"><button class="rm" onclick="rmR('s${id}',sR,${id})">×</button></div>`;
+  g.appendChild(r);
+}
+
+function rmR(ei,arr,id){const i=arr.indexOf(id);if(i>-1)arr.splice(i,1);document.getElementById(ei)?.remove();}
+
+// RULES
+function aRule(t=''){
+  const id=uid();rIds.push(id);
+  const L=document.getElementById('rl');
+  const d=document.createElement('div');d.className='rr';d.id=`r${id}`;
+  d.innerHTML=`<input class="ri" placeholder="Strategy rule..." value="${x(t)}">
+    <button class="rm" onclick="rmRl('r${id}',${id})">×</button>`;
+  L.appendChild(d);
+}
+function rmRl(ei,id){const i=rIds.indexOf(id);if(i>-1)rIds.splice(i,1);document.getElementById(ei)?.remove();}
+
+// UPLOADS
+function hup(k,inp){
+  const f=inp.files[0];if(!f)return;
+  ups[k]=f.name;
+  document.getElementById(`us${k}`).classList.add('has');
+  document.getElementById(`ul${k}`).classList.add('has');
+  document.getElementById(`un${k}`).textContent=f.name;
+  document.getElementById(`uc${k}`).style.display='block';
+}
+function cup(e,k){
+  e.stopPropagation();ups[k]=null;
+  document.getElementById(`f${k}`).value='';
+  document.getElementById(`us${k}`).classList.remove('has');
+  document.getElementById(`ul${k}`).classList.remove('has');
+  document.getElementById(`un${k}`).textContent='';
+  document.getElementById(`uc${k}`).style.display='none';
+}
+
+// OVERNIGHT
+function chkOvn(){
+  const hasPos=oR.some(id=>{const e=document.getElementById(`o${id}`);return e&&e.querySelector('[data-f="ticker"]')?.value.trim();})
+    ||sR.some(id=>{const e=document.getElementById(`s${id}`);return e&&e.querySelector('[data-f="ticker"]')?.value.trim();});
+  const cats=document.getElementById('mcats')?.value||'';
+  const alert=/high.?alert|⚠|overnight|after.?hour|before.?open|tonight/i.test(cats);
+  document.getElementById('ovn').classList.toggle('on',hasPos&&alert);
+}
+
+// SAVE/LOAD
+function rf(el,fields){const d={};fields.forEach(f=>{const e=el.querySelector(`[data-f="${f}"]`);if(e)d[f]=e.value;});return d;}
+function rall(){
+  return{
+    opts:oR.map(id=>{const e=document.getElementById(`o${id}`);return e?rf(e,['ticker','structure','strikes','entry','current','pnl','thesis']):null;}).filter(Boolean),
+    stks:sR.map(id=>{const e=document.getElementById(`s${id}`);return e?rf(e,['ticker','shares','avgcost','current','pnl','thesis']):null;}).filter(Boolean),
+    rules:rIds.map(id=>{const e=document.getElementById(`r${id}`);return e?e.querySelector('input').value:null;}).filter(Boolean),
+    trades,wP,
+    m:{broad:g('mbroad'),nvda:g('mnvda'),cats:g('mcats'),rates:g('mrates')},
+    d:{less:g('dless')},
+    p:{act:g('pact'),qs:g('pqs')}
+  };
+}
+function save(){
+  localStorage.setItem(SK,JSON.stringify(rall()));
+  const f=document.getElementById('svfl');f.classList.add('on');setTimeout(()=>f.classList.remove('on'),1800);
+}
+function load(){
+  const raw=localStorage.getItem(SK);if(!raw)return;
+  try{
+    const d=JSON.parse(raw);
+    if(d.trades)trades=d.trades;
+    if(d.wP)wP={Mon:'',Tue:'',Wed:'',Thu:'',Fri:'',...d.wP};
+    if(d.opts?.length)d.opts.forEach(r=>aOpt(r));
+    if(d.stks?.length)d.stks.forEach(r=>aStk(r));
+    if(d.rules?.length){rIds=[];document.getElementById('rl').innerHTML='';d.rules.forEach(r=>aRule(r));}
+    if(d.m){sv('mbroad',d.m.broad);sv('mnvda',d.m.nvda);sv('mcats',d.m.cats);sv('mrates',d.m.rates);}
+    if(d.d){sv('dless',d.d.less);}
+    if(d.p){sv('pact',d.p.act);sv('pqs',d.p.qs);}
+  }catch(e){console.error(e);}
+}
+
+// GENERATE
+function gen(){
+  const d=rall();
+  const now=new Date();
+  const ds=now.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'}).toUpperCase();
+  const L=[];
+
+  // Get all tickers mentioned
+  const optTickers=[...new Set(d.opts.filter(o=>o.ticker?.trim()).map(o=>o.ticker.trim().toUpperCase()))];
+  const stkTickers=[...new Set(d.stks.filter(s=>s.ticker?.trim()).map(s=>s.ticker.trim().toUpperCase()))];
+  const allTickers=[...new Set([...optTickers,...stkTickers])];
+
+  L.push(`=== TRADING CONTEXT BRIEF — ${ds} ===`);
+  L.push(`Generated: ${now.toLocaleTimeString()}\n`);
+
+  // Overnight warning
+  if(d.m.cats&&/high.?alert|⚠/i.test(d.m.cats))
+    L.push('⚠ OVERNIGHT RISK FLAG: High-impact events in catalyst notes. Review before leaving positions on.\n');
+
+  // Week P&L
+  const hd=Object.values(d.wP).some(v=>v&&v.trim());
+  if(hd||d.trades.length){
+    L.push('── WEEK P&L ──');
+    if(hd)['Mon','Tue','Wed','Thu','Fri'].forEach(dy=>{if(d.wP[dy])L.push(`  ${dy}: ${d.wP[dy]}`);});
+    if(d.trades.length){
+      L.push("  Today's trades:");
+      d.trades.forEach(t=>{const n=ppnl(t.pnl);L.push(`    • ${t.text}${n!==null?' → '+(n>=0?'+$':'-$')+Math.abs(n).toLocaleString():''}`);});
+    }
+    L.push('');
+  }
+
+  // Options
+  const opts=d.opts.filter(o=>o.ticker?.trim());
+  if(opts.length){
+    L.push('── OPTIONS POSITIONS ──');
+    opts.forEach(o=>{
+      L.push(`${o.ticker}  |  ${o.structure}  |  ${o.strikes}`);
+      if(o.entry||o.current||o.pnl)L.push(`  Entry: ${o.entry||'–'}   Current: ${o.current||'–'}   P&L: ${o.pnl||'–'}`);
+      if(o.thesis)L.push(`  Thesis: ${o.thesis}`);
+    });
+    L.push('');
+  }
+
+  // Stocks
+  const stks=d.stks.filter(s=>s.ticker?.trim());
+  if(stks.length){
+    L.push('── STOCK / SHARE POSITIONS ──');
+    stks.forEach(s=>{
+      L.push(`${s.ticker}  |  ${s.shares} shares  |  Avg ${s.avgcost||'–'}  |  Current ${s.current||'–'}  |  P&L ${s.pnl||'–'}`);
+      if(s.thesis)L.push(`  Thesis: ${s.thesis}`);
+    });
+    L.push('');
+  }
+
+  // Macro — filled fields included, blank fields become research tasks
+  L.push('── MACRO CONTEXT ──');
+  if(d.m.broad) L.push(`My Market Read: ${d.m.broad}`);
+  if(d.m.nvda) L.push(`My NVDA/AI View: ${d.m.nvda}`);
+  if(d.m.rates) L.push(`Rates/Macro: ${d.m.rates}`);
+  if(d.m.cats) L.push(`\nKnown Catalysts (from last session):\n${d.m.cats}`);
+  L.push('');
+
+  // Rules
+  const rules=d.rules.filter(r=>r?.trim());
+  if(rules.length){
+    L.push('── STRATEGY RULES ──');
+    rules.forEach(r=>L.push(`• ${r}`));
+    L.push('');
+  }
+
+  // Lessons
+  if(d.d.less){
+    L.push('── RECENT DECISIONS & LESSONS ──');
+    L.push(d.d.less);
+    L.push('');
+  }
+
+  // Plan
+  if(d.p.act){
+    L.push('── PLANNED ACTIONS ──');
+    L.push(d.p.act);
+    L.push('');
+  }
+
+  // Attachments
+  const atts=[ups.p&&`Positions screenshot: ${ups.p}`,ups.a&&`Activity PDF: ${ups.a}`].filter(Boolean);
+  if(atts.length){L.push('── ATTACHMENTS ──');atts.forEach(a=>L.push(`  📎 ${a}`));L.push('');}
+
+  // Specific questions
+  if(d.p.qs){
+    L.push('── MY SPECIFIC QUESTIONS ──');
+    L.push(d.p.qs);
+    L.push('');
+  }
+
+  // ── RESEARCH PROMPT ──
+  L.push('═'.repeat(60));
+  L.push('RESEARCH TASKS — COMPLETE BEFORE RESPONDING:');
+  L.push('');
+
+  // 1. CATALYST RESEARCH — always, comprehensive
+  L.push('【1】CATALYST SWEEP — Next 14 days, be exhaustive:');
+  L.push('');
+  L.push('  POLITICAL / POLICY (most critical — this has burned us before):');
+  L.push('  • Any scheduled White House events, Presidential speeches,');
+  L.push('    press conferences, executive order signings');
+  L.push('  • Trade/tariff announcements, sanctions, export restrictions');
+  L.push('  • Iran/US negotiations, geopolitical flashpoints affecting oil & risk');
+  L.push('  • Congressional hearings on AI, semiconductors, China trade');
+  L.push('');
+  L.push('  FED & MACRO DATA:');
+  L.push('  • FOMC meeting dates, all Fed speaker appearances (esp. Powell)');
+  L.push('  • CPI, PPI, PCE, NFP, jobless claims, GDP, ISM, retail sales');
+  L.push('  • Treasury auctions that could move yields');
+  L.push('');
+  L.push('  EARNINGS — flag anything that moves semis/tech:');
+  if(allTickers.length){
+    L.push(`  • DIRECT: ${allTickers.join(', ')} — next earnings dates`);
+  }
+  L.push('  • TSMC, AMD, AVGO, QCOM, ARM — semiconductor chain');
+  L.push('  • MSFT, META, GOOGL, AMZN, AAPL — MAG7 AI capex signals');
+  L.push('  • Any analyst days, investor conferences, product launches');
+  L.push('');
+  L.push('  OPTIONS MECHANICS:');
+  L.push('  • This week and next week OPEX dates');
+  L.push('  • Any notable max pain levels for my tickers');
+  L.push('');
+  L.push('  ⚠ FLAG ANYTHING IN THE NEXT 48 HOURS AS HIGH ALERT');
+  L.push('  ⚠ IF AN EVENT COULD MOVE MY POSITIONS >5%, CALL IT OUT EXPLICITLY');
+  L.push('');
+
+  // 2. Blank field research tasks
+  const blanks=[];
+  if(!d.m.broad) blanks.push('【2a】Assess current broad market conditions — SPX/QQQ trend, risk sentiment, key levels, anything I should know going into this session.');
+  if(!d.m.nvda) blanks.push('【2b】Give me a current NVDA read — price action, technicals, near-term catalysts, analyst sentiment, resistance levels.');
+  if(!d.m.rates) blanks.push('【2c】Summarize current rates/macro environment — Fed path, DXY, yields, oil price — and how it affects my positions.');
+  if(blanks.length){blanks.forEach(b=>L.push(b));L.push('');}
+
+  // 3. Position assessment
+  if(opts.length||stks.length){
+    L.push('【3】POSITION ASSESSMENT:');
+    L.push('  • Assess overnight risk on all my current positions given the catalyst sweep above');
+    L.push('  • Flag any positions I should consider closing/trimming before risky events');
+    L.push('  • Check if any of my positions are within 5 days of earnings (rule violation check)');
+    L.push('');
+  }
+
+  // 4. Strategy & sizing
+  L.push('【4】STRATEGY & TACTICAL READ:');
+  L.push('  • Given all of the above, what is your tactical read for this session?');
+  L.push('  • Any sizing, entry, or exit suggestions based on current conditions?');
+  L.push('  • Anything I should be watching that I haven\'t mentioned?');
+  if(d.p.qs){L.push('  • Address my specific questions listed above.');}
+  L.push('');
+  L.push('  Present catalyst results as a clean dated list.');
+  L.push('  Lead with HIGH ALERT items. Be direct. No fluff.');
+  L.push('═'.repeat(60));
+
+  document.getElementById('out').value=L.join('\n');
+  document.getElementById('modal').classList.add('on');
+  chkOvn();
+}
+
+function cm(){document.getElementById('modal').classList.remove('on');}
+function cp(){
+  navigator.clipboard.writeText(document.getElementById('out').value).then(()=>{
+    const f=document.getElementById('cpfl');f.classList.add('on');setTimeout(()=>f.classList.remove('on'),2000);
+  });
+}
+document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)cm();});
+
+// HELPERS
+function ppnl(s){if(!s)return null;const n=parseFloat(String(s).replace(/[$,\s]/g,''));return isNaN(n)?null:n;}
+function x(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function g(id){return document.getElementById(id)?.value||'';}
+function sv(id,v){const e=document.getElementById(id);if(e)e.value=v||'';}
+function ar(el){el.style.height='auto';el.style.height=el.scrollHeight+'px';}
+function uid(){return Date.now()+Math.floor(Math.random()*9999);}
+
+document.addEventListener('input',()=>{clearTimeout(window._as);window._as=setTimeout(save,1500);});
+document.addEventListener('input',e=>{if(e.target.id==='mcats')chkOvn();});
+document.addEventListener('keydown',e=>{
+  if((e.metaKey||e.ctrlKey)&&e.key==='s'){e.preventDefault();save();}
+  if((e.metaKey||e.ctrlKey)&&e.key==='Enter')gen();
+});
+</script>
+</body>
+</html>
